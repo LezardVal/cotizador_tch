@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cotizador The Cool Hostel — Generador PDF</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Librerías Client-Side desde CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  
+  <!-- Logo precargado en Base64 (funciona 100% offline y en GitHub Pages) -->
+  <script src="logo-data.js"></script>
+  <script src="cotizador.js"></script>
+
+  <style>
+    :root {
+      --bg: #f5f3ee;
+      --surface: #ffffff;
+      --surface2: #eeece7;
+      --border: #dddbd4;
+      --text: #1a1916;
+      --text2: #6b6960;
+      --text3: #9e9c94;
+      --green: #2d6a4f;
+      --green-bg: #d8f3dc;
+      --blue: #1a4e8a;
+      --blue-bg: #dbeafe;
+      --radius: 10px;
+      --radius-lg: 14px;
+      --btn-primary-bg: #1a1916;
+      --btn-primary-fg: #ffffff;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    [data-theme="dark"] {
+      --bg: #171613;
+      --surface: #242320;
+      --surface2: #2e2c28;
+      --border: #3a3833;
+      --text: #f0ede4;
+      --text2: #a8a49a;
+      --text3: #78756c;
+      --green: #7dd39a;
+      --green-bg: #1e3a2a;
+      --blue: #8bb4e8;
+      --blue-bg: #1a2b40;
+      --btn-primary-bg: #f0ede4;
+      --btn-primary-fg: #171613;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      height: 28px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--green-bg);
+      color: var(--green);
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .theme-toggle {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+    .theme-toggle:hover { background: var(--border); }
+
+    main {
+      flex: 1;
+      max-width: 960px;
+      width: 100%;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem 3rem;
+    }
+
+    .card-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+
+    .sec-hdr {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .field-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text3);
+      display: block;
+      margin-bottom: 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    input, select, textarea {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--text2);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius);
+      padding: 8px 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-fg);
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .btn-secondary:hover { background: var(--border); color: var(--text); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .btn-outline:hover { background: var(--surface2); color: var(--text); }
+
+    /* Estilos de la tabla de servicios */
+    .services-table {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .services-hdr {
+      display: grid;
+      grid-template-columns: 1fr 90px 140px 36px;
+      background: var(--surface2);
+      padding: 8px 12px;
+      font-size: 10px;
+      color: var(--text3);
+      font-weight: 600;
+      gap: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    .service-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 140px 36px;
+      gap: 8px;
+      padding: 6px 12px;
+      border-top: 1px solid var(--border);
+      align-items: center;
+    }
+
+    /* Modal de Previsualización */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      max-width: 860px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      background: #c5c5c5;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Status badge */
+    #cot_status {
+      font-family: 'DM Mono', monospace;
+      font-size: 12.5px;
+      transition: all 0.2s;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <img src="logo.png" alt="The Cool Hostel" class="brand-logo" onerror="this.style.display='none'">
+      <span class="brand-title">Cotizador Grupal</span>
+      <span class="brand-badge">⚡ 100% Web (Sin Servidor)</span>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">🌙</span> <span id="theme-text">Oscuro</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="card-box">
+      <!-- BARRA DE GESTIÓN DE PLANTILLAS Y COLOR -->
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1.5rem;">
+        <div class="sec-hdr">
+          <span>📄 Configurar Cotización</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <!-- Selector de Templates de LocalStorage -->
+          <select id="cot_template_select" onchange="cargarTemplate(this.value)" style="font-size:12px;padding:6px 10px;max-width:170px;">
+            <option value="">📋 Cargar plantilla...</option>
+          </select>
+          <button class="btn btn-secondary" onclick="guardarTemplate()" style="font-size:12px;padding:6px 10px;">
+            💾 Guardar
+          </button>
+          <button class="btn btn-outline" onclick="eliminarTemplate()" style="font-size:12px;padding:6px 8px;" title="Eliminar plantilla actual">
+            🗑
+          </button>
+          <button class="btn btn-outline" onclick="exportarPlantillasJSON()" style="font-size:12px;padding:6px 8px;" title="Exportar plantillas en JSON para compartir">
+            📤 Exportar
+          </button>
+          <label class="btn btn-outline" style="font-size:12px;padding:6px 8px;cursor:pointer;" title="Importar plantillas JSON de un colega">
+            📥 Importar
+            <input type="file" id="import_file" accept=".json" onchange="importarPlantillasJSON(event)" style="display:none;">
+          </label>
+
+          <!-- Paleta de Color -->
+          <select id="cot_color" onchange="actualizarColorPreview()" style="font-size:12px;padding:6px 10px;font-weight:500;">
+            <option value="rosado">🌸 Rosado</option>
+            <option value="amarillo">💛 Amarillo</option>
+            <option value="azul">💙 Azul</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- FILA 1: Nombre y Opción -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div>
+          <label class="field-label">Nombre del Grupo / Cliente</label>
+          <input id="cot_nombre_grupo" type="text" placeholder="Ej: Cristina Serra - Ecoturismo Duoc UC" style="width:100%;">
+        </div>
+        <div>
+          <label class="field-label">Opción (Título adicional)</label>
+          <input id="cot_opcion" type="text" placeholder="Ej: OPCIÓN A (Con Desayunos)" style="width:100%;">
+        </div>
+      </div>
+
+      <!-- FILA 2: Fechas y Pasajeros -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:1.5rem;">
+        <div>
+          <label class="field-label">Fecha Inicio</label>
+          <input id="cot_fecha_inicio" type="date" onchange="actualizarNochesEnTexto()" style="width:100%;font-family:'DM Mono',monospace;">
+        </div>
+        <div>
+          <label class="field-label">Fecha Fin</label>
+          <input id="cot_fecha_fin" type="date" onchange="actualizarNochesEnTexto()" style="width:100%;font-family:'DM Mono',monospace;">
+        </div>
+        <div>
+          <label class="field-label">Total Pasajeros / Huéspedes</label>
+          <input id="cot_total_pasajeros" type="number" placeholder="Ej: 27" style="width:100%;font-family:'DM Mono',monospace;">
+        </div>
+      </div>
+
+      <!-- TABLA DE SERVICIOS -->
+      <label class="field-label">Servicios y Alojamientos</label>
+      <div class="services-table">
+        <div class="services-hdr">
+          <span>SERVICIO</span>
+          <span style="text-align:center;">PERSONAS</span>
+          <span style="text-align:right;">PRECIO TOTAL</span>
+          <span></span>
+        </div>
+        <div id="cot_servicios_list"></div>
+        <div style="padding:8px 12px;background:var(--surface);">
+          <button onclick="cotAddServicio()" class="btn btn-outline" style="font-size:12px;padding:4px 10px;">
+            + Agregar servicio
+          </button>
+        </div>
+      </div>
+
+      <!-- TOTAL ESTADÍA -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:1.5rem;">
+        <div style="background:var(--text);color:var(--bg);border-radius:var(--radius);padding:10px 20px;font-size:14px;font-weight:600;font-family:'DM Mono',monospace;display:flex;gap:12px;align-items:center;">
+          <span style="opacity:0.8;">TOTAL ESTADÍA:</span>
+          <span id="cot_total_display" style="font-size:16px;">$0</span>
+        </div>
+      </div>
+
+      <!-- SECCIÓN INFERIOR: 2 COLUMNAS (EXPERIENCIA & OPCIÓN) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem;">
+        <!-- Experiencia -->
+        <div id="cot_exp_block" style="background:#f08484;border-radius:var(--radius);padding:14px;transition:background 0.2s;">
+          <div style="font-size:11px;font-weight:700;color:white;text-align:center;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">
+            Tu experiencia incluye:
+          </div>
+          <div style="height:1px;background:rgba(255,255,255,0.3);margin-bottom:8px;"></div>
+          <textarea id="cot_experiencia" rows="8"
+            style="width:100%;background:transparent;border:none;outline:none;color:white;font-size:12px;line-height:1.7;resize:vertical;">• Alojamiento por X noches.
+- Ubicación frente a la playa.
+- Uso de piscina y áreas recreativas.
+- Espacios comunes para grupos.
+- Cocina equipada.
+- Baños y duchas amplios.
+- Recepción y asistencia.
+- Grupo ubicado en sectores cercanos.</textarea>
+        </div>
+
+        <!-- Opción Preset -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;">
+          <div style="margin-bottom:8px;">
+            <label class="field-label">Plantilla de contenido adicional</label>
+            <select id="cot_opcion_preset" onchange="cargarOpcionPreset()" style="width:100%;font-size:12px;padding:6px 8px;margin-top:2px;">
+              <option value="desayuno">🍳 Opción Desayuno</option>
+              <option value="rest_simple">🍽 Alimentación Restaurantes (solo desayuno)</option>
+              <option value="rest_completa">🍽 Alimentación Restaurantes (completa)</option>
+              <option value="conectividad">📡 Conectividad & Acceso</option>
+              <option value="invitados">🏠 Alojamiento para Invitados</option>
+            </select>
+          </div>
+          <textarea id="cot_opcion_texto" rows="8"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;outline:none;font-size:12px;line-height:1.7;resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      <!-- CARDS INFERIORES: PAGO, POLÍTICA, PRÓXIMO PASO -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.75rem;">
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--surface);">
+          <div class="field-label">Método de Pago</div>
+          <textarea id="cot_pago" rows="3" style="width:100%;background:transparent;border:none;font-size:11px;line-height:1.6;resize:none;">Transferencia o Link de Pago
+info@thecoolhostel.cl
++56 9 4846 5248</textarea>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--surface);">
+          <div class="field-label">Política de Reserva</div>
+          <textarea id="cot_politica" rows="3" style="width:100%;background:transparent;border:none;font-size:11px;line-height:1.6;resize:none;">✓ Tarifa grupal especial
+✓ Abono del 50% confirma la reserva</textarea>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--surface);">
+          <div class="field-label">Próximo Paso</div>
+          <textarea id="cot_proximo" rows="3" style="width:100%;background:transparent;border:none;font-size:11px;line-height:1.6;resize:none;">Se requiere un depósito en garantía de $100.000 reembolsable al realizar el check-out, sujeto a la entrega de las instalaciones en buen estado.</textarea>
+        </div>
+      </div>
+
+      <!-- BOTONES DE ACCIÓN PRINCIPALES -->
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:1.25rem;">
+        <button class="btn btn-primary" onclick="ejecutarDescargaPDF()" id="btn-descargar">
+          📥 Descargar PDF Directo
+        </button>
+        <select id="cot_formato_pdf" style="font-size:12px;padding:7px 10px;font-weight:500;">
+          <option value="auto">📄 1 Página Continua (Tipo Puppeteer - Recomendado)</option>
+          <option value="a4">📑 1 Página A4 Estándar (Ajustada al papel)</option>
+        </select>
+        <button class="btn btn-secondary" onclick="abrirPrevisualizacion()">
+          👁️ Previsualizar
+        </button>
+        <button class="btn btn-outline" onclick="ejecutarImpresionNativa()" title="Abre el cuadro nativo de imprimir del navegador (Chromium/Edge)">
+          🖨️ Imprimir / Guardar Nativo
+        </button>
+        <span id="cot_status"></span>
+      </div>
+    </div>
+
+    <!-- SECCIÓN OPCIONAL: UNIR CON OTROS PDFS -->
+    <details class="card-box" style="padding:1.25rem;cursor:pointer;">
+      <summary style="font-weight:600;font-size:13.5px;color:var(--text2);outline:none;user-select:none;">
+        📎 Adjuntar / Unir otros PDFs adicionales (Opcional)
+      </summary>
+      <div style="margin-top:1rem;cursor:default;">
+        <p style="font-size:12.5px;color:var(--text2);margin-bottom:10px;line-height:1.5;">
+          Puedes unir automáticamente la cotización generada con documentos PDF existentes (ej: Brochure del hostel, Términos y Condiciones, Carta de Servicios) en un solo archivo final sin usar servidor.
+        </p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <input type="file" id="archivos_pdf_adicionales" accept=".pdf" multiple style="font-size:12px;">
+          <button class="btn btn-secondary" onclick="generarCotizacionUnificada()" style="font-size:12px;">
+            📑 Descargar PDF Combinado
+          </button>
+        </div>
+      </div>
+    </details>
+  </main>
+
+  <!-- MODAL DE PREVISUALIZACIÓN -->
+  <div class="modal-overlay" id="preview-modal" onclick="if(event.target===this) cerrarPrevisualizacion()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <strong style="font-size:14px;">Previsualización de la Cotización</strong>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="ejecutarDescargaPDF(); cerrarPrevisualizacion();" style="font-size:12px;padding:6px 12px;">
+            📥 Descargar
+          </button>
+          <button class="btn btn-outline" onclick="cerrarPrevisualizacion()" style="font-size:12px;padding:6px 12px;">
+            Cerrar
+          </button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="modal-preview-target" style="box-shadow:0 4px 20px rgba(0,0,0,0.15);"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── ESTADO DE LA APLICACIÓN ─────────────────────────────────
+    let cotServicios = [
+      { servicio: 'Cápsulas Hostel Climatizadas', personas: '27', precio: '850.000' },
+      { servicio: 'Impuesto IVA (19%)', personas: '-', precio: '' }
+    ];
+
+    const COT_COLORES_UI = {
+      rosado:   { bg: '#f08484', text: 'white' },
+      amarillo: { bg: '#333333', text: 'white' },
+      azul:     { bg: '#333333', text: 'white' }
+    };
+
+    // ── TEMA CLARO / OSCURO ─────────────────────────────────────
+    function applyTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      const icon = document.getElementById('theme-icon');
+      const text = document.getElementById('theme-text');
+      if (t === 'dark') {
+        icon.textContent = '☀️';
+        text.textContent = 'Claro';
+      } else {
+        icon.textContent = '🌙';
+        text.textContent = 'Oscuro';
+      }
+    }
+
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('cotizador_theme', cur);
+      applyTheme(cur);
+    }
+    applyTheme(localStorage.getItem('cotizador_theme') || 'light');
+
+    // ── SERVICIOS ───────────────────────────────────────────────
+    function cotAddServicio() {
+      cotServicios.push({ servicio: '', personas: '', precio: '' });
+      renderCotServicios();
+    }
+
+    function cotRemoveServicio(idx) {
+      cotServicios.splice(idx, 1);
+      renderCotServicios();
+    }
+
+    function cotUpdateServicio(idx, field, value) {
+      cotServicios[idx][field] = value;
+      calcCotTotal();
+      cotServicios.forEach((s, i) => {
+        if (/impuesto/i.test(s.servicio)) {
+          const rows = document.querySelectorAll('#cot_servicios_list .service-row');
+          if (rows[i]) {
+            const precioInput = rows[i].querySelectorAll('input')[2];
+            if (precioInput) precioInput.value = calcSubtotalHasta(i);
+          }
+        }
+      });
+    }
+
+    function calcSubtotalHasta(idx) {
+      let sub = 0;
+      for (let i = 0; i < idx; i++) {
+        const s = cotServicios[i];
+        if (!/impuesto/i.test(s.servicio) && s.precio) {
+          sub += Number(String(s.precio).replace(/\./g, '').replace(',', '.')) || 0;
+        }
+      }
+      return Math.round(sub * 0.19).toLocaleString('es-CL');
+    }
+
+    function calcCotTotal() {
+      let subtotal = 0, total = 0;
+      cotServicios.forEach(s => {
+        if (/impuesto/i.test(s.servicio)) {
+          total += Math.round(subtotal * 0.19);
+        } else if (s.precio) {
+          const v = Number(String(s.precio).replace(/\./g, '').replace(',', '.')) || 0;
+          subtotal += v;
+          total += v;
+        }
+      });
+      document.getElementById('cot_total_display').textContent = '$' + total.toLocaleString('es-CL');
+      return total;
+    }
+
+    function renderCotServicios() {
+      const container = document.getElementById('cot_servicios_list');
+      if (!cotServicios.length) {
+        container.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--text3);text-align:center;">No hay servicios agregados</div>';
+        calcCotTotal();
+        return;
+      }
+
+      const impuestosPreCalc = cotServicios.map((s, i) => 
+        /impuesto/i.test(s.servicio) ? calcSubtotalHasta(i) : s.precio
+      );
+
+      container.innerHTML = cotServicios.map((s, i) => `
+        <div class="service-row">
+          <input value="${s.servicio.replace(/"/g, '&quot;')}" oninput="cotUpdateServicio(${i},'servicio',this.value)"
+            placeholder="${/impuesto/i.test(s.servicio) ? 'Impuestos IVA' : 'Ej: Cápsulas Hostel'}" style="width:100%;">
+          <input value="${s.personas}" oninput="cotUpdateServicio(${i},'personas',this.value)"
+            placeholder="—" style="text-align:center;font-family:'DM Mono',monospace;width:100%;">
+          <input value="${impuestosPreCalc[i]}"
+            ${/impuesto/i.test(s.servicio) ? 'readonly' : ''}
+            oninput="cotUpdateServicio(${i},'precio',this.value)"
+            style="text-align:right;font-family:'DM Mono',monospace;width:100%;${/impuesto/i.test(s.servicio) ? 'opacity:0.8;background:var(--surface2);' : ''}">
+          <button onclick="cotRemoveServicio(${i})" class="btn btn-outline"
+            style="color:var(--text3);font-size:16px;padding:2px 6px;border:none;">×</button>
+        </div>
+      `).join('');
+
+      calcCotTotal();
+    }
+
+    // ── HELPERS DE FORMULARIO ───────────────────────────────────
+    function cargarOpcionPreset() {
+      const key = document.getElementById('cot_opcion_preset').value;
+      document.getElementById('cot_opcion_texto').value = COT_OPCIONES[key] || '';
+    }
+
+    function actualizarNochesEnTexto() {
+      const fi = document.getElementById('cot_fecha_inicio').value;
+      const ff = document.getElementById('cot_fecha_fin').value;
+      if (!fi || !ff) return;
+      const noches = Math.round((new Date(ff) - new Date(fi)) / 86400000);
+      if (noches <= 0) return;
+      const ta = document.getElementById('cot_experiencia');
+      ta.value = ta.value.replace(/(\d+|X)\s+noches/gi, `${noches} noches`);
+    }
+
+    function actualizarColorPreview() {
+      const color = document.getElementById('cot_color').value;
+      const c = COT_COLORES_UI[color] || COT_COLORES_UI.rosado;
+      const block = document.getElementById('cot_exp_block');
+      if (block) {
+        block.style.background = c.bg;
+        const ta = document.getElementById('cot_experiencia');
+        if (ta) ta.style.color = c.text;
+      }
+    }
+
+    function obtenerDatosFormulario() {
+      const fi = document.getElementById('cot_fecha_inicio').value;
+      const ff = document.getElementById('cot_fecha_fin').value;
+      const noches = fi && ff ? String(Math.round((new Date(ff) - new Date(fi)) / 86400000)) : '';
+
+      return {
+        nombre_grupo: document.getElementById('cot_nombre_grupo').value.trim(),
+        opcion: document.getElementById('cot_opcion').value.trim(),
+        color: document.getElementById('cot_color').value,
+        fecha_inicio: fi,
+        fecha_fin: ff,
+        noches: noches,
+        'noches de estadia': noches,
+        total_pasajeros: document.getElementById('cot_total_pasajeros').value,
+        'total pasajeros': document.getElementById('cot_total_pasajeros').value,
+        opcion_texto: document.getElementById('cot_opcion_texto').value,
+        opcion_preset: document.getElementById('cot_opcion_preset').value,
+        experiencia: document.getElementById('cot_experiencia').value,
+        pago: document.getElementById('cot_pago').value,
+        politica: document.getElementById('cot_politica').value,
+        proximo: document.getElementById('cot_proximo').value,
+        _servicios: JSON.parse(JSON.stringify(cotServicios))
+      };
+    }
+
+    // ── GENERACIÓN Y DESCARGA DE PDF ────────────────────────────
+    async function ejecutarDescargaPDF() {
+      const status = document.getElementById('cot_status');
+      const data = obtenerDatosFormulario();
+
+      if (!data.nombre_grupo) {
+        status.textContent = '⚠ Falta el nombre del grupo';
+        status.style.color = 'var(--text)';
+        return;
+      }
+
+      status.textContent = '⏳ Generando PDF en tu navegador...';
+      status.style.color = 'var(--text2)';
+
+      try {
+        const nombreArchivo = `cotizacion-${data.nombre_grupo}`;
+        const formato = document.getElementById('cot_formato_pdf').value;
+        await descargarPDFClientSide(data, nombreArchivo, formato);
+        status.textContent = '✓ ¡PDF descargado con éxito!';
+        status.style.color = 'var(--green)';
+        setTimeout(() => { status.textContent = ''; }, 3500);
+      } catch (err) {
+        console.error(err);
+        status.textContent = '✗ Error: ' + err.message;
+        status.style.color = 'red';
+      }
+    }
+
+    function ejecutarImpresionNativa() {
+      const data = obtenerDatosFormulario();
+      imprimirPDFNativo(data);
+    }
+
+    function abrirPrevisualizacion() {
+      const data = obtenerDatosFormulario();
+      const paleta = PALETAS[(data.color || 'rosado').toLowerCase()] || PALETAS.rosado;
+      const { filas, totalGrupal } = procesarServiciosParaPDF(data._servicios || []);
+      const logo = (typeof LOGO_BASE64 !== 'undefined') ? LOGO_BASE64 : '';
+
+      const html = buildCotizacionHTML(data, paleta, logo, filas, totalGrupal);
+      document.getElementById('modal-preview-target').innerHTML = html;
+      document.getElementById('preview-modal').style.display = 'flex';
+    }
+
+    function cerrarPrevisualizacion() {
+      document.getElementById('preview-modal').style.display = 'none';
+      document.getElementById('modal-preview-target').innerHTML = '';
+    }
+
+    // ── UNIR CON OTROS PDFS (PDF-Lib) ───────────────────────────
+    async function generarCotizacionUnificada() {
+      const input = document.getElementById('archivos_pdf_adicionales');
+      if (!input.files || input.files.length === 0) {
+        alert('Por favor selecciona al menos un archivo PDF adicional para unir.');
+        return;
+      }
+
+      const status = document.getElementById('cot_status');
+      status.textContent = '⏳ Procesando unión de PDFs...';
+
+      try {
+        const data = obtenerDatosFormulario();
+        const formato = document.getElementById('cot_formato_pdf').value;
+
+        // 1. Generar la cotización como 1 página garantizada sin cortes
+        const pdfCot = await generarPDFDocumento(data, formato);
+        const cotPdfArrayBuffer = pdfCot.output('arraybuffer');
+
+        // 2. Leer archivos externos subidos por el usuario
+        const pdfsExternosBytes = [];
+        for (const file of input.files) {
+          const arrayBuffer = await file.arrayBuffer();
+          pdfsExternosBytes.push(arrayBuffer);
+        }
+
+        // 3. Unir todos los PDFs con PDF-Lib
+        await unirPDFsConPDFLib(cotPdfArrayBuffer, pdfsExternosBytes, `cotizacion-${data.nombre_grupo || 'completa'}`);
+        status.textContent = '✓ ¡PDF unificado descargado!';
+        status.style.color = 'var(--green)';
+        setTimeout(() => { status.textContent = ''; }, 3500);
+      } catch (err) {
+        console.error(err);
+        status.textContent = '✗ Error uniendo PDFs: ' + err.message;
+        status.style.color = 'red';
+      }
+    }
+
+    // ── GESTIÓN DE TEMPLATES CON LOCALSTORAGE ────────────────────
+    const TEMPLATES_KEY = 'cotizador_coolhostel_templates';
+
+    function obtenerTemplatesGuardados() {
+      try {
+        return JSON.parse(localStorage.getItem(TEMPLATES_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function refrescarSelectTemplates() {
+      const templates = obtenerTemplatesGuardados();
+      const sel = document.getElementById('cot_template_select');
+      sel.innerHTML = '<option value="">📋 Cargar plantilla...</option>';
+      templates.forEach((t, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = t.nombre;
+        sel.appendChild(opt);
+      });
+    }
+
+    function guardarTemplate() {
+      const nombre = prompt('Nombre de la plantilla para guardar en este navegador:');
+      if (!nombre || !nombre.trim()) return;
+
+      const templates = obtenerTemplatesGuardados();
+      templates.push({
+        nombre: nombre.trim(),
+        fecha: new Date().toISOString(),
+        datos: obtenerDatosFormulario()
+      });
+
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+      refrescarSelectTemplates();
+      alert(`✓ Plantilla "${nombre.trim()}" guardada exitosamente.`);
+    }
+
+    function cargarTemplate(idx) {
+      if (idx === '') return;
+      const templates = obtenerTemplatesGuardados();
+      const t = templates[idx];
+      if (!t || !t.datos) return;
+
+      const d = t.datos;
+      if (d.nombre_grupo !== undefined) document.getElementById('cot_nombre_grupo').value = d.nombre_grupo;
+      if (d.opcion !== undefined) document.getElementById('cot_opcion').value = d.opcion;
+      if (d.color) {
+        document.getElementById('cot_color').value = d.color;
+        actualizarColorPreview();
+      }
+      if (d.fecha_inicio) document.getElementById('cot_fecha_inicio').value = d.fecha_inicio;
+      if (d.fecha_fin) document.getElementById('cot_fecha_fin').value = d.fecha_fin;
+      if (d.total_pasajeros) document.getElementById('cot_total_pasajeros').value = d.total_pasajeros;
+      if (d.opcion_preset) document.getElementById('cot_opcion_preset').value = d.opcion_preset;
+      if (d.opcion_texto) document.getElementById('cot_opcion_texto').value = d.opcion_texto;
+      if (d.experiencia) document.getElementById('cot_experiencia').value = d.experiencia;
+      if (d.pago) document.getElementById('cot_pago').value = d.pago;
+      if (d.politica) document.getElementById('cot_politica').value = d.politica;
+      if (d.proximo) document.getElementById('cot_proximo').value = d.proximo;
+      if (d._servicios && Array.isArray(d._servicios)) {
+        cotServicios = JSON.parse(JSON.stringify(d._servicios));
+      }
+      renderCotServicios();
+    }
+
+    function eliminarTemplate() {
+      const sel = document.getElementById('cot_template_select');
+      const idx = sel.value;
+      if (idx === '') { alert('Selecciona una plantilla de la lista primero.'); return; }
+
+      const templates = obtenerTemplatesGuardados();
+      const nombre = templates[idx]?.nombre || 'esta plantilla';
+      if (!confirm(`¿Deseas eliminar permanentemente "${nombre}"?`)) return;
+
+      templates.splice(idx, 1);
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+      refrescarSelectTemplates();
+      alert('✓ Plantilla eliminada.');
+    }
+
+    function exportarPlantillasJSON() {
+      const templates = obtenerTemplatesGuardados();
+      const blob = new Blob([JSON.stringify(templates, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `plantillas-the-cool-hostel-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importarPlantillasJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const importados = JSON.parse(evt.target.result);
+          if (!Array.isArray(importados)) throw new Error('El archivo no contiene un array de plantillas');
+          const actuales = obtenerTemplatesGuardados();
+          const combinados = actuales.concat(importados);
+          localStorage.setItem(TEMPLATES_KEY, JSON.stringify(combinados));
+          refrescarSelectTemplates();
+          alert(`✓ Se importaron ${importados.length} plantillas con éxito.`);
+        } catch (err) {
+          alert('Error al leer el archivo JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ── INICIALIZACIÓN AL CARGAR ─────────────────────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCotServicios();
+      cargarOpcionPreset();
+      actualizarColorPreview();
+      refrescarSelectTemplates();
+    });
+  </script>
+</body>
+</html>
